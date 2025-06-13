@@ -1,53 +1,38 @@
 # Dockerfile for USB-Beamer-server
 
-# Use Ubuntu 24.04 as base image
-FROM ubuntu:24.04
+# Use Ubuntu 22.04 as base image to match the host kernel family.
+FROM ubuntu:22.04
 
 # Set environment variables to non-interactive to avoid prompts during installation.
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TUNNEL_PORT=8007
 
 # Update package lists and install necessary packages.
-# - openssh-server: for SSH access.
-# - avahi-daemon: for network service discovery.
-# - usbip: for sharing USB devices over the network.
-# - python3 and python3-pip: for the Python application.
+# - linux-tools-generic & linux-cloud-tools-generic: Provides usbip and other tools
+#   that match the host kernel when running inside a container.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-server \
     avahi-daemon \
-    usbip \
-    python3 \
-    python3-pip \
+    avahi-utils \
+    dbus \
+    linux-tools-generic \
+    linux-cloud-tools-generic \
+    iproute2 \
+    python3-flask \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Flask using pip.
-RUN pip3 install Flask
+# Create a non-root user 'tunnel', and then explicitly lock its password
+# to allow key-based login while preventing password-based login.
+# RUN useradd --create-home --shell /bin/bash tunnel && \
+#     echo "nopasswordlogin" | passwd --stdin tunnel && \
+#     mkdir -p /home/tunnel/.ssh && \
+#     touch /home/tunnel/.ssh/authorized_keys
 
-# Create a non-root user 'tunnel' for SSH access.
-# This user has no password and a non-interactive shell for security.
-# You will need to add a public key to /home/tunnel/.ssh/authorized_keys
-# to allow SSH access. You can do this by adding a COPY instruction like:
-# COPY your_public_key.pub /home/tunnel/.ssh/authorized_keys
-RUN useradd --create-home --shell /usr/sbin/nologin tunnel && \
-    mkdir -p /home/tunnel/.ssh && \
-    touch /home/tunnel/.ssh/authorized_keys && \
-    chown -R tunnel:tunnel /home/tunnel/.ssh && \
-    chmod 700 /home/tunnel/.ssh && \
-    chmod 600 /home/tunnel/.ssh/authorized_keys
+# Create a directory for the SSH daemon and generate host keys.
+RUN mkdir /var/run/sshd && ssh-keygen -A
 
-# Create a directory for the SSH daemon.
-RUN mkdir /var/run/sshd
-
-# Configure SSH for key-based authentication and tunneling only on a configurable port.
-# The port is set by the TUNNEL_PORT environment variable. For runtime configuration,
-# this command should be moved to an entrypoint script.
-# Password authentication and root login are disabled.
-# Shell access is disabled to enhance security, allowing only tunneling.
-# A user with an authorized public key will be required for access.
-RUN sed -i "s/^#?Port .*/Port $TUNNEL_PORT/" /etc/ssh/sshd_config && \
-    sed -i 's/^#?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config && \
-    sed -i 's/^#?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config && \
-    echo "ForceCommand /usr/sbin/nologin" >> /etc/ssh/sshd_config
+# Copy our custom sshd_config file into the container.
+COPY sshd_config /etc/ssh/sshd_config
 
 # Expose ports for SSH and the web application.
 EXPOSE ${TUNNEL_PORT}
@@ -57,9 +42,10 @@ EXPOSE 5000
 WORKDIR /app
 
 # Copy the application code into the container.
+# NOTE: The web app itself (app.py, templates, etc.) is not yet created.
 COPY . /app
 
-# The command to run when the container starts.
-# This is a placeholder and should be replaced with a script that starts
-# all the necessary services (sshd, avahi-daemon, Flask app).
-CMD ["/bin/bash", "-c", "echo 'Container started. Run services manually for now.'; tail -f /dev/null"] 
+# Make the entrypoint script executable and set it as the entrypoint.
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"] 
