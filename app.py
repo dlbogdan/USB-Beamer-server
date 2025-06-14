@@ -2,7 +2,7 @@ import os
 import pwd
 import subprocess
 import json
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 
 app = Flask(__name__)
 
@@ -143,9 +143,17 @@ def add_key():
         set_proper_permissions()
     return redirect(url_for("index"))
 
+@app.route("/api/exported-devices", methods=["GET"])
+def api_exported_devices():
+    """Returns the list of bus IDs configured for export."""
+    return jsonify(get_exported_busids())
+
 if __name__ == "__main__":
     # Set permissions on startup to guarantee correctness.
     set_proper_permissions()
     # On startup, re-apply the binding for persisted devices
     set_exported_devices(get_exported_busids())
-    app.run(host="0.0.0.0", port=5000, debug=True) 
+
+    # Use environment variable for port, default to 5000
+    port = int(os.environ.get("APP_PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True) 
