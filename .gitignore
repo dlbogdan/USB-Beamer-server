@@ -5,7 +5,7 @@ buildroot/.config
 buildroot/.config.old
 
 # Local development symlinks (create these yourself)
-scripts/
+/scripts/
 
 # Python
 __pycache__/
