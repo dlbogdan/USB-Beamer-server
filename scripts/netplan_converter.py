@@ -1,1 +1,0 @@
-../board/beamer/rootfs-overlay/usr/scripts/netplan_converter.py
