@@ -1,0 +1,14 @@
+# Buildroot configuration for USB Beamer Server
+
+# Target Architecture (adjust for your hardware)
+# BR2_arm=y
+# BR2_cortex_a53=y
+
+# System configuration
+BR2_ROOTFS_OVERLAY="../board/beamer/rootfs-overlay"
+
+# Linux kernel config fragment
+BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES="../board/usbip.config"
+
+# Note: Add your specific Buildroot configuration options here
+# This is a minimal defconfig - customize based on your needs
