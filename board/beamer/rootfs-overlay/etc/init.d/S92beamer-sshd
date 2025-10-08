@@ -6,14 +6,14 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Dedicated SSH daemon for Beamer tunneling
-# Description:       Starts an isolated sshd instance with /opt/beamer/sshd_config
+# Description:       Starts an isolated sshd instance with /opt/beamer/beamer-ssh-tunnel
 ### END INIT INFO
 
 NAME=beamer-sshd
 DAEMON=/usr/sbin/sshd
 PIDFILE=/var/run/$NAME.pid
 DESC="Beamer SSH daemon"
-CONFIG=/opt/beamer/sshd_config
+CONFIG=/opt/beamer/beamer-ssh-tunnel
 
 test -x $DAEMON || exit 0
 
