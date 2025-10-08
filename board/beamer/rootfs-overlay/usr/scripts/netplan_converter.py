@@ -1,1 +1,1 @@
-../../../../../netplan_converter.py
+../../../../../scripts/netplan_converter.py
